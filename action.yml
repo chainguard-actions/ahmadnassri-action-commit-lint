@@ -1,0 +1,23 @@
+name: Conventional Commit Lint
+description: commitlint your PRs with a default configuration auto applied
+
+branding:
+  color: red
+  icon: search
+
+inputs:
+  token:
+    description: The GitHub token used to inspect commits
+    default: ${{ github.token }}
+
+  config:
+    description: name of config to use, or path to config file
+    default: conventional
+
+outputs:
+  report:
+    description: a JSON object with the full `commitlint` report data
+
+runs:
+  using: docker
+  image: docker://ghcr.io/ahmadnassri/action-commit-lint@sha256:c7e02e5c730dc5b3a1ee5f2a8ed07ffc0abdc83d019679b28747e725977e9b00 # 2.1.16
