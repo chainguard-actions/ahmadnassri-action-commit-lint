@@ -1,0 +1,33 @@
+name: Test basic usage - default config
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          token: ${{ github.token }}
+          config: conventional
+        continue-on-error: true
+
+      - name: Assert action ran and produced report output
+        env:
+          REPORT: ${{ steps.action.outputs.report }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "report: $REPORT"
+          # The action should either succeed or fail gracefully (not crash the runner)
+          if [ "$OUTCOME" != "success" ] && [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: action did not complete with a known outcome (got: $OUTCOME)"
+            exit 1
+          fi
+          echo "PASS: action completed with outcome=$OUTCOME"

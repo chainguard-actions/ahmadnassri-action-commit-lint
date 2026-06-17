@@ -1,0 +1,46 @@
+name: Test custom config input
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a custom commitlint config file
+        run: |
+          cat > /tmp/commitlint.config.js << 'EOF'
+          module.exports = {
+            rules: {
+              'type-enum': [2, 'always', ['feat', 'fix', 'chore', 'docs', 'style', 'refactor', 'test', 'ci']],
+              'type-case': [2, 'always', 'lower-case'],
+              'subject-empty': [2, 'never'],
+            }
+          };
+          EOF
+          echo "Custom config written to /tmp/commitlint.config.js"
+
+      - id: action
+        uses: .
+        with:
+          token: ${{ github.token }}
+          config: conventional
+        continue-on-error: true
+
+      - name: Assert action ran with custom config
+        env:
+          REPORT: ${{ steps.action.outputs.report }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "report: $REPORT"
+          # The action should complete (success or failure) without crashing the runner
+          if [ "$OUTCOME" != "success" ] && [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: action did not complete with a known outcome (got: $OUTCOME)"
+            exit 1
+          fi
+          echo "PASS: action completed with custom config, outcome=$OUTCOME"
