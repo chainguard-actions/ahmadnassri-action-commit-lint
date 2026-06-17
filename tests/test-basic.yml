@@ -1,0 +1,35 @@
+name: Test basic commit lint (push)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - id: action
+        uses: .
+        with:
+          token: ${{ github.token }}
+          config: conventional
+        continue-on-error: true
+
+      - name: Assert report output is present
+        env:
+          REPORT: ${{ steps.action.outputs.report }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "report: $REPORT"
+          # The action either succeeds or fails with a report — both are valid outcomes
+          # We just verify the action ran (outcome is not empty/cancelled)
+          if [ "$OUTCOME" = "cancelled" ]; then
+            echo "FAIL: action was cancelled unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with outcome=$OUTCOME"

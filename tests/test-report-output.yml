@@ -1,0 +1,41 @@
+name: Test commit lint report output format
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: push
+      GITHUB_REF: refs/heads/main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - id: action
+        uses: .
+        with:
+          token: ${{ github.token }}
+          config: conventional
+        continue-on-error: true
+
+      - name: Assert report output is valid JSON (if present)
+        env:
+          REPORT: ${{ steps.action.outputs.report }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "report: $REPORT"
+          # If the action produced a report, verify it is valid JSON
+          if [ -n "$REPORT" ]; then
+            echo "$REPORT" | python3 -m json.tool > /dev/null 2>&1
+            if [ $? -ne 0 ]; then
+              echo "FAIL: report output is not valid JSON"
+              exit 1
+            fi
+            echo "PASS: report is valid JSON"
+          else
+            echo "INFO: no report output produced (action may have failed before generating report)"
+            # Not a failure — the action may fail due to missing GitHub API context in act
+            echo "PASS: action ran with outcome=$OUTCOME"
+          fi

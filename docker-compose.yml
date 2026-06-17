@@ -1,0 +1,46 @@
+# ---------------------------------------------------- #
+# Note: this file originates in template-action-docker #
+# ---------------------------------------------------- #
+
+services:
+  # ---- mega-linter ---- #
+  lint:
+    profiles: ["dev"]
+    image: oxsecurity/megalinter:v7.2.1
+    volumes:
+      - ./:/tmp/lint
+    environment:
+      MEGALINTER_CONFIG: .github/linters/.mega-linter.yml
+      REPORT_OUTPUT_FOLDER: none
+      VALIDATE_ALL_CODEBASE: true
+
+  # ---- readme generator ---- #
+  readme:
+    profiles: ["dev"]
+    image: pandoc/minimal:2.19
+    volumes:
+      - ./:/data
+    command: --defaults=.pandoc.yml
+
+  # ---- action container ---- #
+  action:
+    profiles: ["action"]
+    build: .
+
+  # ---- main container ---- #
+  app:
+    profiles: ["app"]
+    image: node:20-alpine
+    working_dir: /app
+    entrypoint: npm --no-update-notifier --no-fund --no-audit
+    command: start
+    tty: true
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+
+  test:
+    extends: app
+    profiles: ["test"]
+    command: run test:ci -- --reporter=classic
