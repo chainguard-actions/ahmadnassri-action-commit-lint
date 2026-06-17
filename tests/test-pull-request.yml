@@ -1,0 +1,42 @@
+name: Test commit lint on pull request event
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_EVENT_NAME: pull_request
+      GITHUB_REF: refs/pull/1/merge
+      GITHUB_HEAD_REF: feature-branch
+      GITHUB_BASE_REF: main
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up git commits for PR simulation
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          git commit --allow-empty -m "feat: add conventional commit"
+          git commit --allow-empty -m "fix: resolve a bug"
+
+      - id: action
+        uses: .
+        with:
+          token: ${{ github.token }}
+          config: conventional
+        continue-on-error: true
+
+      - name: Assert action ran in pull_request context
+        env:
+          REPORT: ${{ steps.action.outputs.report }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "report: $REPORT"
+          # The action should have run (not skipped)
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with outcome=$OUTCOME"
