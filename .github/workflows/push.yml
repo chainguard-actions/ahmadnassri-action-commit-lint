@@ -1,0 +1,20 @@
+# ---------------------------------------------------- #
+# Note: this file originates in template-action-docker #
+# ---------------------------------------------------- #
+
+name: push
+
+on:
+  - push
+  - workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  main:
+    uses: ahmadnassri/actions/.github/workflows/push-action-docker.yml@master
+    secrets: inherit
+    permissions:
+      contents: read
+      packages: write

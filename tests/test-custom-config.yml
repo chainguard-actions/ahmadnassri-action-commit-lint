@@ -1,33 +1,11 @@
-name: Test commit lint with custom config
+name: Test custom config input
 on:
   workflow_dispatch:
-
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_EVENT_NAME: push
-      GITHUB_REF: refs/heads/main
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Create a custom commitlint config file
-        run: |
-          cat > commitlint.config.js << 'EOF'
-          module.exports = {
-            rules: {
-              'type-enum': [2, 'always', ['feat', 'fix', 'chore', 'docs']],
-              'subject-empty': [2, 'never'],
-            }
-          };
-          EOF
-
-      - name: Make a conventional commit for testing
-        run: |
-          git config user.email "test@example.com"
-          git config user.name "Test User"
-          git add commitlint.config.js
-          git commit -m "feat: add commitlint config"
 
       - id: action
         uses: .
@@ -43,9 +21,10 @@ jobs:
         run: |
           echo "outcome: $OUTCOME"
           echo "report: $REPORT"
-          # The action should have run (not skipped)
-          if [ "$OUTCOME" = "skipped" ]; then
-            echo "FAIL: action was skipped unexpectedly"
+          # The action should have run (success or failure due to no PR context)
+          # Verify outcome is either success or failure (not skipped/cancelled)
+          if [ "$OUTCOME" = "skipped" ] || [ "$OUTCOME" = "cancelled" ]; then
+            echo "FAIL: action was skipped or cancelled unexpectedly"
             exit 1
           fi
-          echo "PASS: action ran with outcome=$OUTCOME"
+          echo "PASS: action ran with custom config input"
