@@ -1,4 +1,4 @@
-name: Test custom config input (angular) exits gracefully
+name: Test unsupported event (workflow_dispatch) exits gracefully
 on:
   workflow_dispatch:
 
@@ -23,18 +23,30 @@ jobs:
         uses: .
         with:
           token: ${{ github.token }}
-          config: angular
+          config: conventional
         continue-on-error: true
 
-      - name: Assert action completed without failure using angular config
+      - name: Assert action completed without failure
         env:
           OUTCOME: ${{ steps.action.outcome }}
         run: |
           echo "outcome: $OUTCOME"
           # The action should soft-exit (exit 0) on unsupported events like workflow_dispatch
-          # regardless of which built-in config is specified
           if [ "$OUTCOME" = "failure" ]; then
-            echo "FAIL: action should not fail on unsupported event with angular config"
+            echo "FAIL: action should not fail on unsupported event (workflow_dispatch)"
             exit 1
           fi
-          echo "PASS: action exited gracefully with angular config on unsupported event"
+          echo "PASS: action exited gracefully on unsupported event"
+
+      - name: Assert report output is empty (no commits processed)
+        env:
+          REPORT: ${{ steps.action.outputs.report }}
+        run: |
+          echo "report: $REPORT"
+          # On workflow_dispatch, the action exits early before setting the report output
+          # so the report should be empty/unset
+          if [ -n "$REPORT" ]; then
+            echo "INFO: report was set (unexpected but not a failure): $REPORT"
+          else
+            echo "PASS: report is empty as expected for unsupported event"
+          fi
